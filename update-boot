@@ -1,14 +1,6 @@
-# #!/bin/sh -e
-
-# ver="$1"
-# kloc="$2"
-# rdloc="/boot/initrd.img-$ver"
-
-# if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
-# if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
-# if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
-
-# /usr/local/sbin/mortar-compilesigninstall "$kloc" "$rdloc"
+#Create luks key, seal to tpm, install initramfs tools and update kernel/initramfs
+cd /opt/mortar &&
+./3-tpm1.2-prepluksandinstallhooks.sh;
 
 #Append vmlinunz/initramfs/efi/cmdline and sign all executables, 
 sicherboot install-kernel;

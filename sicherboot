@@ -1,0 +1,397 @@
+#!/bin/sh -e
+#
+# Copyright (C) 2016 Julian Andres Klode <jak@jak-linux.org>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+. /etc/os-release
+
+KEY_HOME="/etc/sicherboot/keys"
+BOOT_DIR="/boot"
+BOOT_EFI_DIR="/boot/efi"
+MACHINE_ID="/EFI/Linux"
+MACHINE_ID_ACTUAL="$(cat /etc/machine-id)"
+KEY_CN="${MACHINE_ID}"
+OPENSSL_ARGS="-newkey rsa:2048 -nodes -sha256"
+
+if [ -e /usr/lib/efitools/*/KeyTool.efi ]; then
+    KEYTOOL=$(echo /usr/lib/efitools/*/KeyTool.efi)
+elif [ -e /usr/share/efitools/efi/KeyTool.efi ]; then
+    KEYTOOL=/usr/share/efitools/efi/KeyTool.efi
+fi
+
+# Discover EFI architecture
+for EFI_ARCH in "x64" "aa64" "aarch64" "ia32"; do
+    if [ -e /usr/lib/systemd/boot/efi/linux${EFI_ARCH}.efi.stub ]; then
+        break
+    fi
+done
+
+if [ -n "$SICHERBOOT_CONFIGURATION_FILE_INTERNAL" ]; then
+    . $SICHERBOOT_CONFIGURATION_FILE_INTERNAL
+elif [ -e /etc/sicherboot/sicherboot.conf ]; then
+    . /etc/sicherboot/sicherboot.conf
+fi
+
+set -e
+
+_read_yes_no() {
+    printf "%b [y/n]:" "$*" >&2
+    while true; do
+        read answer
+        case "$answer" in
+            "y"|"Y"|"yes")
+                return 0;;
+            "n"|"N"|"no")
+                return 1;;
+        esac
+    done
+    return 99
+}
+
+BUILD_IMAGE_HELP="Usage: sicherboot build-image <kernel> <initramfs> <output> [<cmdline>]
+
+  Combine the kernel image, the initramfs image, and an optional cmdline
+  file into a UEFI executable.
+"
+build_image() {
+    if [ $# -ne 3 -a $# -ne 4 ]; then
+        printf "%b\n" "$BUILD_IMAGE_HELP" >&2
+        exit 1
+    fi
+
+    local kernel_image="$1"
+    local initramfs_image="$2"
+    local combined_image="$3"
+    local cmdline="${4:-/etc/kernel/cmdline}"
+    local efistub="/usr/lib/systemd/boot/efi/linux${EFI_ARCH}.efi.stub"
+
+
+    objcopy \
+        --add-section .osrel=/etc/os-release --change-section-vma .osrel=0x20000 \
+        --add-section .cmdline="$cmdline" --change-section-vma .cmdline=0x30000 \
+        --add-section .linux="$kernel_image" --change-section-vma .linux=0x40000 \
+        --add-section .initrd="$initramfs_image" --change-section-vma .initrd=0x3000000 \
+        "$efistub" "$combined_image"
+}
+
+SIGN_IMAGE_HELP="Usage: sicherboot sign-image <efi-executable>
+
+  Sign the given executable using the db key.
+"
+sign_image() {
+    if [ $# -ne 1 ]; then
+        printf "%b\n" "$SIGN_IMAGE_HELP" >&2
+        exit 1
+    fi
+
+    if [ ! \( -e "${KEY_HOME}/db.key" -a -e "${KEY_HOME}/db.crt" \) ]; then
+        echo "No db.key, skipping sign_image."
+        return 0
+    fi
+
+    local image="$1"
+    local out="$2"
+
+    cp $image $image.jak-bak
+    sbsign --key $KEY_HOME/db.key \
+           --cert $KEY_HOME/db.crt \
+           --output "$image"  "$image.jak-bak"
+    rm "$image.jak-bak"
+}
+
+_create_loader_entry() {
+    local conf="$1"
+    local image="$2"
+    local version="$3"
+    local title="$4"
+    local cmdline="${4:-/etc/kernel/cmdline}"
+    
+    echo "title $4" > "$conf"
+    #echo "machine-id $MACHINE_ID_ACTUAL" >> "$conf"
+    echo "version $version" >> "$conf"
+    #echo "options $cmdline" >> "$conf"
+    echo "linux $image" >> "$conf"
+}
+
+INSTALL_RECOVERY_HELP="Usage: sicherboot istall recovery [<version>]
+
+  Install the current recovery to the ESP(s). 
+"
+install_recovery() {
+    local VERSION="${1:-$(uname -r)}"
+    local IMAGE_DIR="/boot/xbootldr/EFI"
+    local IMAGE="/sbrecovery.efi"
+    local RECOVERY_DIR="/recovery/casper-27EC-7247"
+    
+#    mkdir -p "$BOOT_EFI_DIR$IMAGE_DIR"
+    build_image "$RECOVERY_DIR/vmlinuz.efi"\
+                "$RECOVERY_DIR/initrd.gz"\
+                "$IAMGE_DIR$IMAGE"
+    # cp $RECOVERY/vmlinuz.efi $BOOT_EFI_DIR$IMAGE_DIR$IMAGE
+    # cp $RECOVERY/initrd.gz $BOOT_EFI_DIR$IMAGE_DIR
+    sign_image "$IMAGE_DIR$IMAGE"
+}
+
+INSTALL_KERNEL_HELP="Usage: sicherboot install-kernel [<version>]
+
+  Install the given kernel version to the ESP(s). If no kernel is given, the
+  currently running one is installed.
+"
+install_kernel() {
+    local version="${1:-$(uname -r)}"
+    local relative_image_dir="/EFI/Linux"
+    local image_dir="$BOOT_EFI_DIR/$relative_image_dir"
+    local relative_image="$relative_image_dir/sblinux.efi"
+    local image="/boot/xbootldr/EFI/sblinux.efi"
+    local title="$PRETTY_NAME"
+    local conf_dir="$BOOT_EFI_DIR/loader/entries"
+    local conf="$conf_dir/$MACHINE_ID_ACTUAL$version.conf"
+
+    #mkdir -p "$conf_dir"
+    #mkdir -p "$image_dir"
+    _create_loader_entry  "$conf_dir/Pop_OS.conf" "$relative_image" "$version" "$title"
+
+    build_image "$BOOT_DIR/vmlinuz-$version" \
+                "$BOOT_DIR/initrd.img-$version" \
+                "$image"\
+                "/etc/kernel/cmdline"
+    sign_image "$image"
+}
+
+
+
+REMOVE_KERNEL_HELP="Usage: sicherboot remove-kernel [<version>]
+
+  Removes a kernel from the ESP.
+"""
+remove_kernel() {
+    local version="${1:-$(uname -r)}"
+    local image_dir="$BOOT_EFI_DIR/$MACHINE_ID/$version"
+    local image="$image_dir/linux.efi"
+    local conf="$BOOT_EFI_DIR/loader/entries/$MACHINE_ID_ACTUAL-$version.conf"
+
+    rm "$conf" || true
+    rm "$image" || true
+    rmdir "$image_dir" || true
+}
+
+BOOTCTL_HELP="Usage: sicherboot bootctl [<argument> ...]
+
+  Run bootctl with the given arguments and afterwards sign the
+  systemd-boot${EFI_ARCH}.efi
+"
+bootctl() {
+    command bootctl --path="$BOOT_EFI_DIR" "$@"
+    sign_image "$BOOT_EFI_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
+    sign_image "$BOOT_EFI_DIR/EFI/BOOT/BOOTX64.efi"
+}
+
+
+GENERATE_KEYS_HELP="Usage: sicherboot generate-keys
+
+  Generate the keys in ${KEY_HOME}. This has no effect in case a db.key and
+  a db.crt already exists in there.
+"
+_generate_key() {
+    local key_fun="$1"
+    local signer="$2"
+    openssl req -new -x509 $OPENSSL_ARGS \
+                -keyout "${key_fun}.key" \
+                -out "${key_fun}.crt" \
+                -subj "/CN=${KEY_CN} ${key_fun}/"
+    openssl x509 -in "${key_fun}.crt" \
+                 -out "${key_fun}.cer" -outform DER
+
+    cert-to-efi-sig-list -g $(cat "uuid") ${key_fun}.crt ${key_fun}.esl
+    sign-efi-sig-list -k "${signer}.key" -c "${signer}.crt" "${key_fun}" "${key_fun}.esl" "${key_fun}.auth"
+}
+
+generate_keys() {
+    if [ -e "${KEY_HOME}/db.key" -a -e "${KEY_HOME}/db.crt" -a -z "$SICHERBOOT_FORCE_KEYGEN" ]; then
+        echo "Found db.key, skipping key generation."
+        return 0
+    fi
+    [ -e "${KEY_HOME}" ] || mkdir "${KEY_HOME}"
+    chown root:root "${KEY_HOME}"
+    chmod 700 "${KEY_HOME}"
+    cd "${KEY_HOME}"
+    uuidgen > "${KEY_HOME}/uuid"
+    _generate_key PK PK
+    _generate_key KEK PK
+    _generate_key db KEK
+}
+
+_copy_keys() {
+    local key_dir="$1"
+    mkdir -p "$key_dir"
+    cp "$KEY_HOME/db.auth" "$key_dir"
+    cp "$KEY_HOME/KEK.auth" "$key_dir"
+    cp "$KEY_HOME/PK.auth" "$key_dir"
+    cp "$KEY_HOME/db.cer" "$key_dir"
+    cp "$KEY_HOME/KEK.cer" "$key_dir"
+    cp "$KEY_HOME/db.esl" "$key_dir"
+    cp "$KEY_HOME/KEK.esl" "$key_dir"
+
+    echo "Installed signed key files into the $key_dir_rel directory in the ESP."
+}
+
+ENROLL_KEYS_HELP="Usage: sicherboot enroll-keys
+
+  Install signed db, KEK, and PK (self-signed) keys into your ESP, together
+  with KeyTool, so you can easily flash the new key.
+"
+enroll_keys() {
+    local relative_image="EFI/BOOT/KeyTool.efi"
+    local image_dir="$BOOT_EFI_DIR/EFI/BOOT"
+    local image="$BOOT_EFI_DIR/$relative_image"
+    local conf_dir="$BOOT_EFI_DIR/loader/entries"
+    local conf="$conf_dir/KeyTool.conf"
+    local key_dir_rel="Keys/$MACHINE_ID_ACTUAL"
+    local key_dir="$BOOT_EFI_DIR/$key_dir_rel"
+
+    if [ ! -e "$KEYTOOL" ]; then
+        echo "ERROR: Cannot find KeyTool in /usr/{lib,share}/efitools" >&2
+        exit 1
+    fi
+
+    if [ -e "$KEY_HOME/db.auth" -a -e "$KEY_HOME/KEK.auth" -a -e "$KEY_HOME/PK.auth" ]; then
+        _copy_keys "$key_dir"
+    else
+        echo "Error: Cannot find signed key files. " >&2
+        echo "The key storage directory ${KEY_HOME} contains:" >&2
+        ls -l ${KEY_HOME}/ >&2 || true
+        if _read_yes_no "Do you want to run generate-keys?"; then
+            SICHERBOOT_FORCE_KEYGEN=true generate_keys
+            _copy_keys "$key_dir"
+        else
+            if ! _read_yes_no "Do you want to continue installing KeyTool?"; then
+                return 0
+            fi
+        fi
+    fi
+
+    mkdir -p "$image_dir"
+    mkdir -p "$conf_dir"
+
+    cp "$KEYTOOL" "$image"
+    sign_image "$image"
+
+    echo "title UEFI Key Setup Tool" > "$conf"
+    echo "efi $relative_image" >> "$conf"
+
+    echo "Installed KeyTool into the ESP."
+    echo
+    echo "To finish enrolling the keys, reboot the machine, make sure it"
+    echo "is in setup mode, launch KeyTool, save the old keys, and then"
+    echo "replace them, in the following order:"
+    echo "  (1) db (signed by KEK)"
+    echo "  (2) KEK (key exchange key, signed by PK)"
+    echo "  (3) PK (platform key, self signed)"
+    echo
+    echo "Prefer .auth over .esl over .cer"
+    echo
+    echo "Once your PK key has been replaced, your system is put into user"
+    echo "mode (you might need to reboot for it to take effect). From then"
+    echo "on, all key changes and binaries need to be signed by the parent"
+    echo "key. Binaries with db, db with KEK, KEK and PK with PK."
+    echo
+    echo "If you want to put your system into setup mode again, you can do"
+    echo "so by placing $KEY_HOME/rm_PK.auth into your ESP's Keys folder and"
+    echo "replacing the PK with it. This is a signed empty file which will"
+    echo "thus remove the existing PK which means the device is in setup"
+    echo "mode again."
+    echo "Do not reuse the same keys again after re-entering setup mode this"
+    echo "way, as anyone could just remove the key again by flashing rm_PK.auth"
+}
+
+SETUP_HELP="setup
+
+  Perform initial setup.
+  This generates keys, enrolls them (or rather prepares enrollment), and
+  installs the running kernel and systemd-boot to ${BOOT_EFI_DIR}.
+"
+setup() {
+    if _read_yes_no "Enroll keys to ${BOOT_EFI_DIR}?"; then
+        enroll_keys
+    fi
+    if _read_yes_no "Install running kernel to ${BOOT_EFI_DIR}?"; then
+        install_kernel
+    fi
+    if _read_yes_no "Install current recovery to ${BOOT_EFI_DIR}";then 
+        install_recovery
+    fi
+    if _read_yes_no "Install systemd-boot to ${BOOT_EFI_DIR}?"; then
+        bootctl install
+    fi
+}
+
+help() {
+    [ -n "$1" -a "$1" != "build-image"  ] || printf "%b\n" "$BUILD_IMAGE_HELP"
+    [ -n "$1" -a "$1" != "sign-image"  ] || printf "%b\n" "$SIGN_IMAGE_HELP"
+    [ -n "$1" -a "$1" != "install-kernel"  ] || printf "%b\n" "$INSTALL_KERNEL_HELP"
+    [ -n "$1" -a "$1" != "install-recovery"  ] || printf "%b\n" "$INSTALL_RECOVERY_HELP"
+    [ -n "$1" -a "$1" != "remove-kernel"  ] || printf "%b\n" "$REMOVE_KERNEL_HELP"
+    [ -n "$1" -a "$1" != "bootctl"  ] || printf "%b\n" "$BOOTCTL_HELP"
+    [ -n "$1" -a "$1" != "generate-keys"  ] || printf "%b\n" "$GENERATE_KEYS_HELP"
+    [ -n "$1" -a "$1" != "enroll-keys"  ] || printf "%b\n" "$ENROLL_KEYS_HELP"
+    [ -n "$1" -a "$1" != "setup"  ] || printf "%b" "$SETUP_HELP"
+}
+
+
+# Main part of script
+if [ $# -lt 1 ]; then
+    echo "E: No command specified" >&2
+    help >&2
+    exit 1
+fi
+
+command="$1"
+shift
+case "$command" in
+    "build-image")
+        build_image "$@";;
+    "sign-image")
+        sign_image "$@";;
+    "install-kernel")
+        install_kernel "$@";;
+    "install-recovery")
+        install_recovery "$@";;
+    "remove-kernel")
+        remove_kernel "$@";;
+    "bootctl")
+        bootctl "$@";;
+    "--help"|"help"|"-h")
+        echo "sicherboot - Secure boot and bootloader management stuff"
+        echo
+        help "$@"
+        ;;
+    "generate-keys")
+        generate_keys "$@" ;;
+    "enroll-keys")
+        enroll_keys "$@" ;;
+    "setup")
+        setup "$@";;
+    *)
+        echo "sicherboot - Secure boot and bootloader management stuff" >&2
+        echo >&2
+        help >&2
+        exit 1
+        ;;
+esac
