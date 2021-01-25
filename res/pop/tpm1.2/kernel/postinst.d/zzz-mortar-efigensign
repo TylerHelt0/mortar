@@ -1,5 +1,4 @@
 #!/bin/sh -e
-
 BOOOTX64=
 SYSTEMD=
 
