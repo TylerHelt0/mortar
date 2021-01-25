@@ -19,9 +19,11 @@ esac
 . /usr/share/initramfs-tools/hook-functions 
  
 # copy the daemon + config in the initrd 
+copy_exec /usr/bin/chown /sbin/
+copy_exec /usr/bin/sha256sum /sbin/
 copy_exec /usr/sbin/tcsd /sbin 
 copy_exec /etc/tcsd.conf /etc 
- 
+
 # copy the necessary libraries 
 cp -fpL /lib/x86_64-linux-gnu/libns* ${DESTDIR}/lib/x86_64-linux-gnu/ 
 
