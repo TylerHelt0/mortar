@@ -1,0 +1,18 @@
+#!/bin/sh
+KERNEL="$(basename "$( sudo readlink -f /boot/vmlinuz )")"
+ALT="$(basename "$( sudo readlink -f /boot/vmlinuz.old )")"
+
+sign_kernel() {
+    echo "mortar: Installing $1 to ESP";
+    mortar install-kernel "$1";
+}
+sign_alt() {
+    echo "mortar: Installing $1 to ESP";
+    mortar install-alternates;
+}
+
+mortar help > /dev/null 2>&1 || exit 0
+[ "$KERNEL" = "vmlinuz-$1" ] && sign_kernel $1;
+[ "$ALT" = "vmlinuz-$1" ] && sign_alt $1;
+
+exit 0

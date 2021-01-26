@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# sicherboot file. Installed as dracut to work around missing
+# hook support in dracut...
+
+set -e
+
+sicherboot_kernel_version="$1"
+
+# Run the real dracut first if it exists
+[ -e /etc/kernel/postinst.d/dracut.SecureBoot ] || exit 0
+
+. /etc/kernel/postinst.d/dracut.SecureBoot
+
+sicherboot help > /dev/null 2>&1 || exit 0
+
+echo "sicherboot: Installing $sicherboot_kernel_version to ESP"
+
+sicherboot install-kernel "$sicherboot_kernel_version"

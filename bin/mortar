@@ -22,7 +22,7 @@
 
 . /etc/os-release
 
-KEY_HOME="/etc/sicherboot/keys"
+KEY_HOME=/etc/mortar/private
 BOOT_DIR="/boot"
 BOOT_EFI_DIR="/boot/efi"
 MACHINE_ID="/EFI/Linux"
@@ -65,7 +65,7 @@ _read_yes_no() {
     return 99
 }
 
-BUILD_IMAGE_HELP="Usage: sicherboot build-image <kernel> <initramfs> <output> [<cmdline>]
+BUILD_IMAGE_HELP="Usage: mortar build-image <kernel> <initramfs> <output> [<cmdline>]
 
   Combine the kernel image, the initramfs image, and an optional cmdline
   file into a UEFI executable.
@@ -91,7 +91,7 @@ build_image() {
         "$efistub" "$combined_image"
 }
 
-SIGN_IMAGE_HELP="Usage: sicherboot sign-image <efi-executable>
+SIGN_IMAGE_HELP="Usage: mortar sign-image <efi-executable>
 
   Sign the given executable using the db key.
 "
@@ -112,7 +112,7 @@ sign_image() {
     cp $image $image.jak-bak
     sbsign --key $KEY_HOME/db.key \
            --cert $KEY_HOME/db.crt \
-           --output "$image"  "$image.jak-bak"
+           --output "$image"  "$image.jak-bak" > /dev/null 2>&1
     rm "$image.jak-bak"
 }
 
@@ -131,7 +131,7 @@ _create_loader_entry() {
 }
 
 
-INSTALL_KERNEL_HELP="Usage: sicherboot install-kernel [<version>]
+INSTALL_KERNEL_HELP="Usage: mortar install-kernel [<version>]
 
   Install the given kernel version to the ESP(s). If no kernel is given, the
   currently running one is installed.
@@ -148,25 +148,22 @@ install_kernel() {
 
     #mkdir -p "$conf_dir"
     #mkdir -p "$image_dir"
-    _create_loader_entry  "$conf_dir/Pop_OS.conf" "$relative_image" "$version" "$title"
-
+    # _create_loader_entry  "$conf_dir/Pop_OS.conf" "$relative_image" "$version" "$title"
+    echo "mortar: Installing running kernel to EFI"
     build_image "$BOOT_DIR/vmlinuz-$version" \
                 "$BOOT_DIR/initrd.img-$version" \
                 "$image"\
                 "/etc/kernel/cmdline"
+    echo "mortar: Signing kernel."
     sign_image "$image"
-    build_image "$BOOT_DIR/vmlinuz.old"\
-                "$BOOT_DIR/initrd.img.old"\
-                "/boot/xbootldr/EFI/sblinux.alt.efi"\
-                "/etc/kernel/altline"
-    sign_image "/boot/xbootldr/EFI/sblinux.alt.efi"
-    rm -r /boot/efi/EFI/Pop_OS-*;
-    rm -r "/boot/efi/loader/entries/Pop_OS-*";
-    rm -r "/boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7";
+    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
+    [ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 
 }
 
-INSTALL_RECOVERY_HELP="Usage: sicherboot install recovery [<version>]
+INSTALL_RECOVERY_HELP="Usage: mortar install recovery [<version>]
 
   Install the current recovery to the ESP(s). 
 "
@@ -177,41 +174,53 @@ install_recovery() {
     local RECOVERY_DIR="/recovery/casper-27EC-7247"
     
 #    mkdir -p "$BOOT_EFI_DIR$IMAGE_DIR"
+    echo "mortar: Installing recovery to efi."
     build_image "$RECOVERY_DIR/vmlinuz.efi"\
                 "$RECOVERY_DIR/initrd.gz"\
-                "$IAMGE_DIR$IMAGE"
+                "$IAMGE_DIR$IMAGE"\
                 "/etc/kernel/recline"
     # cp $RECOVERY/vmlinuz.efi $BOOT_EFI_DIR$IMAGE_DIR$IMAGE
     # cp $RECOVERY/initrd.gz $BOOT_EFI_DIR$IMAGE_DIR
+    echo "mortar: Signing recovery image."
     sign_image "$IMAGE_DIR$IMAGE"
+    [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery*;
 }
 
 
-INSTALL_ALTERNATES_HELP="Usage: sicherboot install-alternates
+INSTALL_ALTERNATES_HELP="Usage: mortar install-alternates
 
- Install personal alternate kernels  to the ESP.
+ Install personal alternate kernels to the ESP.
 "
 install_alternates() {
     IMAGE_DIR="/boot/xbootldr/EFI"
     ALT_IMAGE="/sblinux.alt.efi"
     VERB_IMAGE="/sblinux.verbose.efi"
 
+    echo "mortar: Installing verbose kernel to EFI."
     build_image "$BOOT_DIR/vmlinuz"\
                 "$BOOT_DIR/initrd.img"\
                 "$IMAGE_DIR/$VERB_IMAGE"\
                 "/etc/kernel/altline"
+    echo "mortar: Installing alternate kernel to EFI"
+    echo "mortar: Signing verbose kernel."
+    sign_image "$IMAGE_DIR$VERB_IMAGE"
 
     build_image "$BOOT_DIR/vmlinuz.old"\
                 "$BOOT_DIR/initrd.img.old"\
                 "$IMAGE_DIR/$ALT_IMAGE"\
                 "/etc/kernel/cmdline"
-    sign_image "$IMAGE_DIR$VERB_IMAGE"
+    echo "mortar: Signing alternate kernel."
     sign_image "$IMAGE_DIR$ALT_IMAGE"
+
+    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
+    [ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 }
 
 
 
-REMOVE_KERNEL_HELP="Usage: sicherboot remove-kernel [<version>]
+REMOVE_KERNEL_HELP="Usage: mortar remove-kernel [<version>]
 
   Removes a kernel from the ESP.
 """
@@ -226,7 +235,7 @@ remove_kernel() {
     rmdir "$image_dir" || true
 }
 
-BOOTCTL_HELP="Usage: sicherboot bootctl [<argument> ...]
+BOOTCTL_HELP="Usage: mortar bootctl [<argument> ...]
 
   Run bootctl with the given arguments and afterwards sign the
   systemd-boot${EFI_ARCH}.efi
@@ -238,7 +247,7 @@ bootctl() {
 }
 
 
-GENERATE_KEYS_HELP="Usage: sicherboot generate-keys
+GENERATE_KEYS_HELP="Usage: mortar generate-keys
 
   Generate the keys in ${KEY_HOME}. This has no effect in case a db.key and
   a db.crt already exists in there.
@@ -258,7 +267,7 @@ _generate_key() {
 }
 
 generate_keys() {
-    if [ -e "${KEY_HOME}/db.key" -a -e "${KEY_HOME}/db.crt" -a -z "$SICHERBOOT_FORCE_KEYGEN" ]; then
+    if [ -e "${KEY_HOME}/db.key" -a -e "${KEY_HOME}/db.crt" -a -z "$mortar_FORCE_KEYGEN" ]; then
         echo "Found db.key, skipping key generation."
         return 0
     fi
@@ -286,7 +295,7 @@ _copy_keys() {
     echo "Installed signed key files into the $key_dir_rel directory in the ESP."
 }
 
-ENROLL_KEYS_HELP="Usage: sicherboot enroll-keys
+ENROLL_KEYS_HELP="Usage: mortar enroll-keys
 
   Install signed db, KEK, and PK (self-signed) keys into your ESP, together
   with KeyTool, so you can easily flash the new key.
@@ -368,6 +377,9 @@ setup() {
     if _read_yes_no "Install running kernel to ${BOOT_EFI_DIR}?"; then
         install_kernel
     fi
+    if _read_yes_no "Install alternate kernel to ${BOOT_EFI_DIR}?"; then
+        install_alternates
+    fi
     if _read_yes_no "Install current recovery to ${BOOT_EFI_DIR}";then 
         install_recovery
     fi
@@ -415,7 +427,7 @@ case "$command" in
     "bootctl")
         bootctl "$@";;
     "--help"|"help"|"-h")
-        echo "sicherboot - Secure boot and bootloader management stuff"
+        echo "mortar - Secure boot and bootloader management stuff"
         echo
         help "$@"
         ;;
@@ -426,7 +438,7 @@ case "$command" in
     "setup")
         setup "$@";;
     *)
-        echo "sicherboot - Secure boot and bootloader management stuff" >&2
+        echo "mortar - Secure boot and bootloader management stuff" >&2
         echo >&2
         help >&2
         exit 1
