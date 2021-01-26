@@ -74,6 +74,7 @@ if [ -f "$HEADERFILE" ]; then rm "$HEADERFILE"; fi
 # Figure out our distribuition.
 source /etc/os-release
 tpmverdir='tpm1.2'
+ID=ubuntu
 # Defer to tpm and distro-specific install script.
 if [ -d "$OLD_DIR/""res/""$ID/""$tpmverdir/" ]; then
 	cd "$OLD_DIR/""res/""$ID/""$tpmverdir/"

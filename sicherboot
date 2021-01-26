@@ -130,24 +130,6 @@ _create_loader_entry() {
     echo "linux $image" >> "$conf"
 }
 
-INSTALL_RECOVERY_HELP="Usage: sicherboot istall recovery [<version>]
-
-  Install the current recovery to the ESP(s). 
-"
-install_recovery() {
-    local VERSION="${1:-$(uname -r)}"
-    local IMAGE_DIR="/boot/xbootldr/EFI"
-    local IMAGE="/sbrecovery.efi"
-    local RECOVERY_DIR="/recovery/casper-27EC-7247"
-    
-#    mkdir -p "$BOOT_EFI_DIR$IMAGE_DIR"
-    build_image "$RECOVERY_DIR/vmlinuz.efi"\
-                "$RECOVERY_DIR/initrd.gz"\
-                "$IAMGE_DIR$IMAGE"
-    # cp $RECOVERY/vmlinuz.efi $BOOT_EFI_DIR$IMAGE_DIR$IMAGE
-    # cp $RECOVERY/initrd.gz $BOOT_EFI_DIR$IMAGE_DIR
-    sign_image "$IMAGE_DIR$IMAGE"
-}
 
 INSTALL_KERNEL_HELP="Usage: sicherboot install-kernel [<version>]
 
@@ -173,6 +155,58 @@ install_kernel() {
                 "$image"\
                 "/etc/kernel/cmdline"
     sign_image "$image"
+    build_image "$BOOT_DIR/vmlinuz.old"\
+                "$BOOT_DIR/initrd.img.old"\
+                "/boot/xbootldr/EFI/sblinux.alt.efi"\
+                "/etc/kernel/altline"
+    sign_image "/boot/xbootldr/EFI/sblinux.alt.efi"
+    rm -r /boot/efi/EFI/Pop_OS-*;
+    rm -r "/boot/efi/loader/entries/Pop_OS-*";
+    rm -r "/boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7";
+
+}
+
+INSTALL_RECOVERY_HELP="Usage: sicherboot install recovery [<version>]
+
+  Install the current recovery to the ESP(s). 
+"
+install_recovery() {
+    local VERSION="${1:-$(uname -r)}"
+    local IMAGE_DIR="/boot/xbootldr/EFI"
+    local IMAGE="/sbrecovery.efi"
+    local RECOVERY_DIR="/recovery/casper-27EC-7247"
+    
+#    mkdir -p "$BOOT_EFI_DIR$IMAGE_DIR"
+    build_image "$RECOVERY_DIR/vmlinuz.efi"\
+                "$RECOVERY_DIR/initrd.gz"\
+                "$IAMGE_DIR$IMAGE"
+                "/etc/kernel/recline"
+    # cp $RECOVERY/vmlinuz.efi $BOOT_EFI_DIR$IMAGE_DIR$IMAGE
+    # cp $RECOVERY/initrd.gz $BOOT_EFI_DIR$IMAGE_DIR
+    sign_image "$IMAGE_DIR$IMAGE"
+}
+
+
+INSTALL_ALTERNATES_HELP="Usage: sicherboot install-alternates
+
+ Install personal alternate kernels  to the ESP.
+"
+install_alternates() {
+    IMAGE_DIR="/boot/xbootldr/EFI"
+    ALT_IMAGE="/sblinux.alt.efi"
+    VERB_IMAGE="/sblinux.verbose.efi"
+
+    build_image "$BOOT_DIR/vmlinuz"\
+                "$BOOT_DIR/initrd.img"\
+                "$IMAGE_DIR/$VERB_IMAGE"\
+                "/etc/kernel/altline"
+
+    build_image "$BOOT_DIR/vmlinuz.old"\
+                "$BOOT_DIR/initrd.img.old"\
+                "$IMAGE_DIR/$ALT_IMAGE"\
+                "/etc/kernel/cmdline"
+    sign_image "$IMAGE_DIR$VERB_IMAGE"
+    sign_image "$IMAGE_DIR$ALT_IMAGE"
 }
 
 
@@ -346,6 +380,7 @@ help() {
     [ -n "$1" -a "$1" != "build-image"  ] || printf "%b\n" "$BUILD_IMAGE_HELP"
     [ -n "$1" -a "$1" != "sign-image"  ] || printf "%b\n" "$SIGN_IMAGE_HELP"
     [ -n "$1" -a "$1" != "install-kernel"  ] || printf "%b\n" "$INSTALL_KERNEL_HELP"
+    [ -n "$1" -a "$1" != "install-alternates"  ] || printf "%b\n" "$INSTALL_ALTERNATES_HELP"
     [ -n "$1" -a "$1" != "install-recovery"  ] || printf "%b\n" "$INSTALL_RECOVERY_HELP"
     [ -n "$1" -a "$1" != "remove-kernel"  ] || printf "%b\n" "$REMOVE_KERNEL_HELP"
     [ -n "$1" -a "$1" != "bootctl"  ] || printf "%b\n" "$BOOTCTL_HELP"
@@ -371,6 +406,8 @@ case "$command" in
         sign_image "$@";;
     "install-kernel")
         install_kernel "$@";;
+    "install-alternates")
+        install_alternates "$@";;
     "install-recovery")
         install_recovery "$@";;
     "remove-kernel")
