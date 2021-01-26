@@ -1,0 +1,22 @@
+# #!/bin/sh -e
+
+# ver="$1"
+# kloc="$2"
+# rdloc="/boot/initrd.img-$ver"
+
+# if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
+# if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
+# if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
+
+# /usr/local/sbin/mortar-compilesigninstall "$kloc" "$rdloc"
+
+#Append vmlinunz/initramfs/efi/cmdline and sign all executables, 
+echo "Kernel updated: re-signing systemd-boot."
+mortar bootctl install
+
+# #Remove unneccessary boot partition clutter
+[ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery*;
+[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
+[ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+[ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+[ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
