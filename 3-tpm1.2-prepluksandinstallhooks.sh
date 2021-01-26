@@ -19,35 +19,34 @@ fi
 if mkdir tmpramfs && mount tmpfs -t tmpfs -o size=1M,noexec,nosuid tmpramfs; then
 	echo "Created tmpramfs for storing the key."
 	trap "if [ -f tmpramfs/user.key ]; then rm -f tmpramfs/user.key; fi" EXIT
-	echo -n "Enter luks password: "; read -s PASSWORD; echo
-	echo -n "$PASSWORD" > tmpramfs/user.key
-	unset PASSWORD
+	echo -n "Enter luks password: "; read -s OWNERPW; echo
+	echo -n "$OWNERPW" > tmpramfs/user.key
 else
 	echo "Failed to create tmpramfs for storing the key."
 	exit 1
 fi
 
-if command -v luksmeta >/dev/null; then
+# if luks1
+if [ "$LUKSVER" == "1" ]; then
 	echo "Wiping any existing metadata in the luks keyslot."
-	luksmeta wipe -d "$CRYPTDEV" -s "$SLOT"
+	luksmeta wipe -d "$CRYPTDEV" -s "$SLOT" #Wipe metadata from keyslot if present. 
 fi
 
 echo "Wiping any old luks key in the keyslot..."
 cryptsetup luksKillSlot --key-file tmpramfs/user.key "$CRYPTDEV" "$SLOT"
-read -p "If this is the first time running, do you want to attempt taking ownership of the tpm? (y/N): " takeowner	
-case "$takeowner" in
-	[yY]*) tpm_takeownership -z ;;
-esac
 
 echo "Generating key..."
 dd bs=1 count=512 if=/dev/urandom of=tmpramfs/mortar.key
 chmod 700 tmpramfs/mortar.key
 cryptsetup luksAddKey "$CRYPTDEV" --key-slot "$SLOT" tmpramfs/mortar.key --key-file tmpramfs/user.key
 
+read -p "If this is the first time running, do you want to attempt taking ownership of the tpm? (y/N): " takeowner	
+case "$takeowner" in
+	[yY]*) tpm_takeownership -z ;;
+esac
 echo "Sealing key to TPM..."
 if [ -z "$TPMINDEX" ]; then echo "TPMINDEX not set."; exit 1; fi
 PERMISSIONS="OWNERWRITE|READ_STCLEAR"
-read -s -r -p "Owner password: " OWNERPW
 # Wipe index if it is populated.
 if tpm_nvinfo | grep \($TPMINDEX\) > /dev/null; then tpm_nvrelease -i "$TPMINDEX" -o"$OWNERPW"; fi
 # Convert PCR format...
