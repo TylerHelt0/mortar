@@ -5,6 +5,7 @@
 #cp -r kernel /etc/
 mkdir -p /usr/local/share/libalpm/hooks
 cp -r hooks/mortar.hook /usr/share/libalpm/hooks/
+cp -r initramfs /etc/
 
 # Install the initramfs script and update hook. 
 cp -r initcpio /etc/

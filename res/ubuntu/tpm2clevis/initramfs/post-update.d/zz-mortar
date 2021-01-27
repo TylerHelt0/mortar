@@ -1,0 +1,11 @@
+#!/bin/sh
+
+ver="$1"
+kloc="/boot/vmlinuz-$1"
+rdloc="$2"
+
+if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
+if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
+if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
+
+/usr/local/sbin/mortar-compilesigninstall "$kloc" "$rdloc"

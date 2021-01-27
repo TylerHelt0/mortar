@@ -6,6 +6,7 @@ cp -r kernel /etc/
 
 # Install the initramfs script and update hook. 
 cp -r initramfs-tools /etc/
+cp -r initramfs /etc/
 INITRAMFSSCRIPTFILE='/etc/initramfs-tools/scripts/local-top/mortar'
 source /etc/mortar/mortar.env
 sed -i -e "/^CRYPTDEV=.*/{s##CRYPTDEV=\"$CRYPTDEV\"#;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"

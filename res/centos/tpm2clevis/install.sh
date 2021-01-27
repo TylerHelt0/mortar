@@ -3,6 +3,7 @@
 
 # Install the kernel upgrade hook for generation and signing of the efi.
 cp -r kernel /etc/
+cp -r initramfs /etc/
 
 ## EDIT THIS FOR CENTOS:
 # Install the initramfs script and update hook. 
