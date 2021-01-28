@@ -63,13 +63,6 @@ rm tmpramfs/user.key
 umount -l tmpramfs
 rm -rf tmpramfs
 
-echo "Adding new sha256 of the luks header to the mortar env file."
-if [ -f "$HEADERFILE" ]; then rm "$HEADERFILE"; fi
-cryptsetup luksHeaderBackup "$CRYPTDEV" --header-backup-file "$HEADERFILE"
-HEADERSHA256=`sha256sum "$HEADERFILE" | cut -f1 -d' '`
-sed -i -e "/^HEADERSHA256=.*/{s//HEADERSHA256=$HEADERSHA256/;:a" -e '$!N;$!b' -e '}' "$MORTAR_FILE"
-if [ -f "$HEADERFILE" ]; then rm "$HEADERFILE"; fi
-
 # Figure out our distribuition.
 source /etc/os-release
 tpmverdir='tpm1.2'

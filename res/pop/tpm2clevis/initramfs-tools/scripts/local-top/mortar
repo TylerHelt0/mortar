@@ -22,22 +22,7 @@ sleep 2
 # Verify the LUKS header.
 if [ -f "$HEADERFILE" ]; then rm "$HEADERFILE"; fi
 if cryptsetup luksHeaderBackup "$CRYPTDEV" --header-backup-file "$HEADERFILE"; then
-    HEADERSHA256CUR=`sha256sum "$HEADERFILE" | cut -f1 -d' '`
-    if [ "$HEADERSHA256" == "$HEADERSHA256CUR" ]; then
-        echo "HEADER VALIDATION SUCCEEDED."
-    else
-        echo "HEADER VALIDATION FAILED."
-        echo "WAITING 10 SECONDS BEFORE CONTINUING."
-        echo "KILL SYSTEM NOW IF YOU DO NOT TRUST THIS HEADER."
-        sleep 7
-        echo "3..."
-        sleep 1
-        echo "2..."
-        sleep 1
-        echo "1..."
-        sleep 1
-    fi
-    sleep 2
+    sleep 1
 fi
 
 # Verify Secureboot and decrypt.
