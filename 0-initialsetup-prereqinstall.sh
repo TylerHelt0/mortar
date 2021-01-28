@@ -37,6 +37,7 @@ if grep " quiet" "$CMDLINEFILE" >/dev/null; then echo "WARNING - \"quiet\" detec
 # Install the efi signing script.
 #cp bin/mortar-compilesigninstall /usr/local/sbin/mortar-compilesigninstall
 cp bin/mortar /usr/local/sbin/mortar
+cp bin/update-boot /usr/local/sbin/update-boot
 if ! command -v mortar >/dev/null; then
 	echo "Installed mortar to /usr/local/sbin but couldn't find it in PATH. Please update your PATH to include /usr/local/sbin"
 fi

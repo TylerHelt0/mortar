@@ -199,18 +199,18 @@ install_alternates() {
     echo "mortar: Installing verbose kernel to EFI."
     build_image "$BOOT_DIR/vmlinuz"\
                 "$BOOT_DIR/initrd.img"\
-                "$IMAGE_DIR/$VERB_IMAGE"\
+                "$IMAGE_DIR/$ALT_IMAGE"\
                 "/etc/kernel/altline"
     echo "mortar: Installing alternate kernel to EFI"
     echo "mortar: Signing verbose kernel."
-    sign_image "$IMAGE_DIR$VERB_IMAGE"
-
-    build_image "$BOOT_DIR/vmlinuz.old"\
-                "$BOOT_DIR/initrd.img.old"\
-                "$IMAGE_DIR/$ALT_IMAGE"\
-                "/etc/kernel/cmdline"
-    echo "mortar: Signing alternate kernel."
     sign_image "$IMAGE_DIR$ALT_IMAGE"
+
+#    build_image "$BOOT_DIR/vmlinuz.old"\
+#                "$BOOT_DIR/initrd.img.old"\
+#                "$IMAGE_DIR/$VERB_IMAGE"\
+#                "/etc/kernel/cmdline"
+#    echo "mortar: Signing alternate kernel."
+#    sign_image "$IMAGE_DIR$VERB_IMAGE"
 
     [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
     [ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;

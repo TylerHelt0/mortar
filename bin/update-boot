@@ -4,6 +4,7 @@ cd /opt/mortar &&
 
 #Append vmlinunz/initramfs/efi/cmdline and sign all executables, 
 sicherboot install-kernel;
+sicherboot install-alternates;
 sicherboot bootctl update;
 
 # #Remove unneccessary boot partition clutter
