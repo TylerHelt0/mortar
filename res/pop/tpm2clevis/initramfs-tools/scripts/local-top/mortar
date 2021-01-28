@@ -19,11 +19,7 @@ if [ -e /dev/mapper/"$CRYPTNAME" ]; then exit; fi
 if ! [ -e "$CRYPTDEV" ]; then echo "Cannot find the crypto device at $CRYPTDEV"; exit 1; fi
 sleep 2
 
-# Verify the LUKS header.
-if [ -f "$HEADERFILE" ]; then rm "$HEADERFILE"; fi
-if cryptsetup luksHeaderBackup "$CRYPTDEV" --header-backup-file "$HEADERFILE"; then
-    sleep 1
-fi
+sleep 5
 
 # Verify Secureboot and decrypt.
 

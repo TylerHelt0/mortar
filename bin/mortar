@@ -109,11 +109,10 @@ sign_image() {
     local image="$1"
     local out="$2"
 
-    cp $image $image.jak-bak
+
     sbsign --key $KEY_HOME/db.key \
            --cert $KEY_HOME/db.crt \
-           --output "$image"  "$image.jak-bak" > /dev/null 2>&1
-    rm "$image.jak-bak"
+           --output "$image"  "$image" > /dev/null 2>&1
 }
 
 _create_loader_entry() {
@@ -157,7 +156,7 @@ install_kernel() {
     echo "mortar: Signing kernel."
     sign_image "$image"
     [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
-    [ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
     [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
     [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 
@@ -196,24 +195,24 @@ install_alternates() {
     ALT_IMAGE="/sblinux.alt.efi"
     VERB_IMAGE="/sblinux.verbose.efi"
 
-    echo "mortar: Installing verbose kernel to EFI."
+    echo "mortar: Installing maintenance kernel to EFI."
     build_image "$BOOT_DIR/vmlinuz"\
                 "$BOOT_DIR/initrd.img"\
                 "$IMAGE_DIR/$ALT_IMAGE"\
                 "/etc/kernel/altline"
-    echo "mortar: Installing alternate kernel to EFI"
-    echo "mortar: Signing verbose kernel."
+    echo "mortar: Signing maintenance kernel."
     sign_image "$IMAGE_DIR$ALT_IMAGE"
 
+#    echo "mortar: Installing verbose kernel to EFI"
 #    build_image "$BOOT_DIR/vmlinuz.old"\
 #                "$BOOT_DIR/initrd.img.old"\
 #                "$IMAGE_DIR/$VERB_IMAGE"\
 #                "/etc/kernel/cmdline"
-#    echo "mortar: Signing alternate kernel."
+#    echo "mortar: Signing verbose kernel."
 #    sign_image "$IMAGE_DIR$VERB_IMAGE"
 
     [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
-    [ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
     [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
     [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 }

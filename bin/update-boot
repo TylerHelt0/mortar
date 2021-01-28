@@ -1,15 +1,10 @@
+#!/bin/bash
+
 #Create luks key, seal to tpm, install initramfs tools and update kernel/initramfs
 cd /opt/mortar &&
 ./3-tpm1.2-prepluksandinstallhooks.sh;
 
 #Append vmlinunz/initramfs/efi/cmdline and sign all executables, 
-sicherboot install-kernel;
-sicherboot install-alternates;
-sicherboot bootctl update;
-
-# #Remove unneccessary boot partition clutter
-rm -r /boot/efi/EFI/Pop_OS-*;
-rm -r /boot/efi/EFI/Recovery*;
-rm -r /boot/efi/loader/entries/Pop_OS-*;
-rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
-rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+mortar install-kernel;
+mortar install-alternates;
+mortar bootctl update;
