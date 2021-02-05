@@ -1,5 +1,5 @@
 #!/bin/sh -e
-
+#This is utterly fucked
 ver="$1"
 kloc="$2"
 rdloc="/boot/initrd.img-$ver"
