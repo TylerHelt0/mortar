@@ -8,7 +8,8 @@ cp -r kernel /etc/
 cp -r initramfs-tools /etc/
 
 # Install DKMS hook for module signing using /etc/mortar/private/db.key and db.crt.der
-cp ../../../chain-sign-hook.conf /var/lib/secureboot/dkms/
+cp ../chain-sign-hook.conf /var/lib/secureboot/dkms/
+cp -r initramfs /etc/
 
 INITRAMFSSCRIPTFILE='/etc/initramfs-tools/scripts/local-top/mortar'
 if ! [ "$1" == "nosource" ]; then source /etc/mortar/mortar.env; fi
@@ -19,9 +20,3 @@ sed -i -e "/^SLOT=.*/{s//SLOT=$SLOT/;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFI
 sed -i -e "/^HEADERSHA256=.*/{s//HEADERSHA256=$HEADERSHA256/;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
 sed -i -e "/^HEADERFILE=.*/{s##HEADERFILE=\"$HEADERFILE\"#;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
 sed -i -e "/^TOKENID=.*/{s//TOKENID=$TOKENID/;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
-
-bash /opt/mortar/setup-dkms.sh
-update-initramfs -u
-
-echo "Initramfs updated. You need to run mortar-compilesigninstall [kernelpath] [initramfspath]"
-echo "Consult the README for more detail."

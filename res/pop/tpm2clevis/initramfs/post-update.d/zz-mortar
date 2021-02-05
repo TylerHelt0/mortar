@@ -5,8 +5,8 @@ ALT="$(basename "$( sudo readlink -f /boot/vmlinuz.old )")"
 clean_boot() {
     # #Remove unneccessary boot partition clutter
 [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery*;
-[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
-[ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+[ -f "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
+[ -d "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
 [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 }

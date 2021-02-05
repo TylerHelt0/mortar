@@ -9,7 +9,7 @@ cp -r initramfs-tools /etc/
 cp -r initramfs /etc/
 
 # Install DKMS hook for module signing using /etc/mortar/private/db.key and db.crt.der
-cp ../../../chain-sign-hook.conf /var/lib/secureboot/dkms/
+cp ../chain-sign-hook.conf /var/lib/secureboot/dkms/
 
 INITRAMFSSCRIPTFILE='/etc/initramfs-tools/scripts/local-top/mortar'
 source /etc/mortar/mortar.env
