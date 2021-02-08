@@ -24,8 +24,8 @@
 
 KEY_HOME=/etc/mortar/private
 BOOT_DIR="/boot"
-BOOT_EFI_DIR="/boot/efi"
-MACHINE_ID="/EFI/Linux"
+BOOT_EFI_DIR="/boot/xbootldr"
+MACHINE_ID="/EFI/"
 MACHINE_ID_ACTUAL="$(cat /etc/machine-id)"
 KEY_CN="${MACHINE_ID}"
 OPENSSL_ARGS="-newkey rsa:2048 -nodes -sha256"
@@ -137,7 +137,7 @@ INSTALL_KERNEL_HELP="Usage: mortar install-kernel [<version>]
 "
 install_kernel() {
     local version="${1:-$(uname -r)}"
-    local relative_image_dir="/EFI/Linux"
+    local relative_image_dir="/EFI/"
     local image_dir="$BOOT_EFI_DIR/$relative_image_dir"
     local relative_image="$relative_image_dir/sblinux.efi"
     local image="/boot/xbootldr/EFI/sblinux.efi"
@@ -155,10 +155,10 @@ install_kernel() {
                 "/etc/kernel/cmdline"
     echo "mortar: Signing kernel."
     sign_image "$image"
-    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
-    [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
-    [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
-    [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-*;
+    [ -f /boot/efi/loader/entries/Pop_OS-* ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -d /boot/efi/4* ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d /boot/xbootldr/4* ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 
 }
 
@@ -182,7 +182,7 @@ install_recovery() {
     # cp $RECOVERY/initrd.gz $BOOT_EFI_DIR$IMAGE_DIR
     echo "mortar: Signing recovery image."
     sign_image "$IMAGE_DIR$IMAGE"
-    [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery*;
+    [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery*;
 }
 
 
@@ -211,10 +211,10 @@ install_alternates() {
 #    echo "mortar: Signing verbose kernel."
 #    sign_image "$IMAGE_DIR$VERB_IMAGE"
 
-    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-*;
-    [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
-    [ -d "/boot/efi/4*" ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
-    [ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-*;
+    [ -f /boot/efi/loader/entries/Pop_OS-* ] && rm -r /boot/efi/loader/entries/Pop_OS-*;
+    [ -d /boot/efi/4* ] && rm -r /boot/efi/4bfbf10fcdd6d3152ccf60f75f8b32e7;
+    [ -d /boot/xbootldr/4* ] && rm -r /boot/xbootldr/4bfbf10fcdd6d3152ccf60f75f8b32e7;
 }
 
 

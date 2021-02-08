@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mortar help > /dev/null 2>&1 || exit 0
+mortar remove-kernel "$1"

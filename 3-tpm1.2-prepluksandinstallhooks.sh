@@ -45,6 +45,7 @@ case "$takeowner" in
 	[yY]*) tpm_takeownership -z ;;
 esac
 echo "Sealing key to TPM..."
+tpm_resetdalock
 if [ -z "$TPMINDEX" ]; then echo "TPMINDEX not set."; exit 1; fi
 PERMISSIONS="OWNERWRITE|READ_STCLEAR"
 # Wipe index if it is populated.
