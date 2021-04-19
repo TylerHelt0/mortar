@@ -1,0 +1,30 @@
+#!/bin/sh -e
+#This is utterly fucked
+ver="$1"
+MORTAR=/usr/local/sbin/mortar 
+
+clean_boot() {
+    # #Remove unneccessary boot partition clutter
+    #TEST WILDCARD REQUIRES QUOTES
+[ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+[ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-*;> /dev/null
+[ -d "/boot/efi/4*" ] && rm -r /boot/efi/c93* > /dev/null;
+[ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
+}
+
+sign_kernel() {
+    echo "mortar: Installing $1 to ESP";
+    $MORTAR install-kernel "$1";
+    clean_boot;
+}
+sign_alt() {
+    echo "mortar: Installing $1 to ESP";
+    $MORTAR install-alternates;
+    clean_boot;
+}
+
+echo "nigger" && sign_kernel;
+echo "nigger2" && sign_alt;
+#echo "boot nigger"
+echo "clean nigger" && clean_boot;

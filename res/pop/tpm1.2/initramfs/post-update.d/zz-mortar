@@ -1,28 +1,28 @@
 #!/bin/sh
 KERNEL="$(basename "$( sudo readlink -f /boot/vmlinuz )")"
 ALT="$(basename "$( sudo readlink -f /boot/vmlinuz.old )")"
+MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     # #Remove unneccessary boot partition clutter
-[ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery*;
-[ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-*;
-[ -f /boot/efi/loader/entries/Pop_OS-* ] && rm /boot/efi/loader/entries/Pop_OS-*;
-[ -d /boot/efi/4* ] && rm -r /boot/efi/c93*;
-[ -d /boot/xbootldr/4* ] && rm -r /boot/xbootldr/c93;
+    #TEST WILDCARD REQUIRES QUOTES
+[ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+[ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-*;> /dev/null
+[ -d "/boot/efi/c93*" ] && rm -r /boot/efi/c93* > /dev/null;
+[ -d "/boot/xbootldr/c93*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
 
 sign_kernel() {
-    echo "mortar: Installing $1 to ESP";
-    mortar install-kernel "$1";
+    $MORTAR install-kernel "$1";
     clean_boot;
 }
 sign_alt() {
-    echo "mortar: Installing $1 to ESP";
-    mortar install-alternates;
+    $MORTAR install-alternates $1
     clean_boot;
 }
 
-mortar help > /dev/null 2>&1 || exit 0
+$MORTAR help > /dev/null || exit 1;
 #[ "$KERNEL" = "vmlinuz-$1" ] && sign_kernel $1;
 #[ "$ALT" = "vmlinuz-$1" ] && sign_alt $1;
 sign_kernel; sign_alt && clean_boot; exit 0
