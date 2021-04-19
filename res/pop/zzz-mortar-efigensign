@@ -6,11 +6,11 @@ MORTAR=/usr/local/sbin/mortar
 clean_boot() {
     # #Remove unneccessary boot partition clutter
     #TEST WILDCARD REQUIRES QUOTES
-[ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+[ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+[ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
 [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-*;> /dev/null
-[ -d "/boot/efi/4*" ] && rm -r /boot/efi/c93* > /dev/null;
-[ -d "/boot/xbootldr/4*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
+[ -d /boot/efi/4* ] && rm -r /boot/efi/c93* > /dev/null;
+[ -d /boot/xbootldr/4* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
 
 sign_kernel() {

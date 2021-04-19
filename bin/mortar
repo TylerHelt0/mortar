@@ -24,7 +24,7 @@
 
 KEY_HOME=/etc/mortar/private
 BOOT_DIR="/boot"
-BOOT_EFI_DIR="/boot/xbootldr"
+BOOT_EFI_DIR="/boot/efi"
 MACHINE_ID="/EFI/"
 MACHINE_ID_ACTUAL="$(cat /etc/machine-id)"
 KEY_CN="${MACHINE_ID}"
@@ -42,12 +42,6 @@ for EFI_ARCH in "x64" "aa64" "aarch64" "ia32"; do
         break
     fi
 done
-
-if [ -n "$SICHERBOOT_CONFIGURATION_FILE_INTERNAL" ]; then
-    . $SICHERBOOT_CONFIGURATION_FILE_INTERNAL
-elif [ -e /etc/sicherboot/sicherboot.conf ]; then
-    . /etc/sicherboot/sicherboot.conf
-fi
 
 set -e
 
@@ -68,11 +62,11 @@ _read_yes_no() {
 clean_boot() {
     #Remove unneccessary boot partition clutter
     #TEST WILDCARD REQUIRES QUOTES
-    [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-    [ -f "/boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-*> /dev/null;
-    [ -d "/boot/efi/c93*" ] && rm -r /boot/efi/c93* > /dev/null;
-    [ -d "/boot/xbootldr/c93*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
+    [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS* > /dev/null;
+    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null;
+    [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
+    [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93* > /dev/null;
 }
 
 BUILD_IMAGE_HELP="Usage: mortar build-image <kernel> <initramfs> <output> [<cmdline>]
@@ -161,7 +155,7 @@ install_kernel() {
     echo "mortar: Installing vmlinuz-$version to EFI"
     build_image "$BOOT_DIR/vmlinuz-$version" \
                 "$BOOT_DIR/initrd.img-$version" \
-                "$image"\
+                "$image_dir$image"\
                 "/etc/kernel/cmdline"
     echo "mortar: Signing kernel."
     sign_image "$image_dir$image";
@@ -232,8 +226,10 @@ BOOTCTL_HELP="Usage: mortar bootctl [<argument> ...]
 "
 bootctl() {
     command bootctl --path="$BOOT_EFI_DIR" "$@"
+    echo "Signing bootloader";
     sign_image "$BOOT_EFI_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
     sign_image "$BOOT_EFI_DIR/EFI/BOOT/BOOTX64.efi"
+    clean_boot
 }
 
 
