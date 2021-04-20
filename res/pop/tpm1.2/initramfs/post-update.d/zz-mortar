@@ -8,7 +8,7 @@ clean_boot() {
     #TEST WILDCARD REQUIRES QUOTES
 [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
 [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-[ -f /boot/efi/loader/entries/Pop_OS-* ] && rm /boot/efi/loader/entries/Pop_OS-*;> /dev/null
+[ "-f /boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-* > /dev/null
 [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
 [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
@@ -26,4 +26,4 @@ $MORTAR help > /dev/null || exit 1;
 
 #[ "$KERNEL" = "vmlinuz-$1" ] && sign_kernel $1;
 #[ "$ALT" = "vmlinuz-$1" ] && sign_alt $1;
-sign_kernel && clean_boot; exit 0
+sign_kernel && sign_alt && clean_boot; exit 0

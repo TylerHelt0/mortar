@@ -64,7 +64,7 @@ clean_boot() {
     #TEST WILDCARD REQUIRES QUOTES
     [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
     [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS* > /dev/null;
-    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null;
+    [ "-f /boot/efi/loader/entries/Pop_OS*" ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null;
     [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
     [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93* > /dev/null;
 }
