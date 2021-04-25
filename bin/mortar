@@ -24,7 +24,7 @@
 
 KEY_HOME=/etc/mortar/private
 BOOT_DIR="/boot"
-BOOT_EFI_DIR="/boot/efi"
+BOOT_EFI_DIR="/boot/xbootldr"
 MACHINE_ID="/EFI/"
 MACHINE_ID_ACTUAL="$(cat /etc/machine-id)"
 KEY_CN="${MACHINE_ID}"
@@ -142,7 +142,7 @@ INSTALL_KERNEL_HELP="Usage: mortar install-kernel [<version>]
 install_kernel() {
     local version="${1:-$(uname -r)}"
     local relative_image_dir="/EFI/"
-    local image_dir="$BOOT_EFI_DIR/$relative_image_dir"
+    local image_dir="$BOOT_EFI_DIR$relative_image_dir"
     local relative_image="$relative_image_dir/sblinux.efi"
     local image="/sblinux.efi"
     local title="$PRETTY_NAME"
@@ -169,13 +169,13 @@ INSTALL_ALTERNATES_HELP="Usage: mortar install-alternates
 install_alternates() {
     local version="${1:-$(uname -r)}"
     local relative_image_dir="/EFI"
-    local image_dir="$BOOT_EFI_DIR/$relative_image_dir/"
+    local image_dir="$BOOT_EFI_DIR$relative_image_dir"
     local alt_image="/sblinux.alt.efi"
 
     echo "mortar: Installing maintenance kernel $version to EFI."
     build_image "$BOOT_DIR/vmlinuz-$version"\
                 "$BOOT_DIR/initrd.img-$version"\
-                "$image_dir/$alt_image"\
+                "$image_dir$alt_image"\
                 "/etc/kernel/altline"
     echo "mortar: Signing maintenance kernel."
     sign_image "$image_dir$alt_image"
