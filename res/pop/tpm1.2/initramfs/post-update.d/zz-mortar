@@ -1,15 +1,16 @@
 #!/bin/sh
-KERNEL=${1:="$(basename "$( sudo readlink -f /boot/vmlinuz )")"}
+KERNEL=${1:="$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')"}
+ALT=${1:="$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')"}
 MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
     #Test wildcard requires quotes if a file has a wildcard
-[ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-[ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-[ -f /boot/efi/loader/entries/Pop_OS* ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
-[ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
-[ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
+    [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null
+    [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
+    [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
 
 sign_kernel() {
@@ -17,9 +18,9 @@ sign_kernel() {
     clean_boot;
 }
 sign_alt() {
-    $MORTAR install-alternates "$1";
+    $MORTAR install-alternates "$ALT";
     clean_boot;
 }
 
 $MORTAR help > /dev/null || exit 1;
-sign_kernel && clean_boot; exit 0
+sign_kernel; exit 

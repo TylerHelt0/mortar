@@ -24,7 +24,8 @@
 
 KEY_HOME=/etc/mortar/private
 BOOT_DIR="/boot"
-BOOT_EFI_DIR="/boot/xbootldr"
+BOOT_EFI_DIR="/boot/efi"
+BOOT_XBOOT_DIR="/boot/xbootldr"
 MACHINE_ID="/EFI/"
 MACHINE_ID_ACTUAL="$(cat /etc/machine-id)"
 KEY_CN="${MACHINE_ID}"
@@ -61,12 +62,12 @@ _read_yes_no() {
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
-    #TEST WILDCARD REQUIRES QUOTES
+    #Test wildcard requires quotes if a file has a wildcard
     [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS* > /dev/null;
-    [ "-f /boot/efi/loader/entries/Pop_OS*" ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null;
+    [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null
     [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
-    [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93* > /dev/null;
+    [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
 
 BUILD_IMAGE_HELP="Usage: mortar build-image <kernel> <initramfs> <output> [<cmdline>]
@@ -140,13 +141,13 @@ INSTALL_KERNEL_HELP="Usage: mortar install-kernel [<version>]
   currently running one is installed.
 "
 install_kernel() {
-    local version="${1:-$(uname -r)}"
+    local version="${1:="$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')"}"
     local relative_image_dir="/EFI/"
-    local image_dir="$BOOT_EFI_DIR$relative_image_dir"
+    local image_dir="$BOOT_XBOOT_DIR$relative_image_dir"
     local relative_image="$relative_image_dir/sblinux.efi"
     local image="/sblinux.efi"
     local title="$PRETTY_NAME"
-    local conf_dir="$BOOT_EFI_DIR/loader/entries"
+    local conf_dir="$BOOT_XBOOT_DIR/loader/entries"
     local conf="$conf_dir/$MACHINE_ID_ACTUAL$version.conf"
 
     #mkdir -p "$conf_dir"
@@ -167,9 +168,9 @@ INSTALL_ALTERNATES_HELP="Usage: mortar install-alternates
  Install personal alternate kernels to the ESP.
 "
 install_alternates() {
-    local version="${1:-$(uname -r)}"
+    local version="${1:="$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')"}"
     local relative_image_dir="/EFI"
-    local image_dir="$BOOT_EFI_DIR$relative_image_dir"
+    local image_dir="$BOOT_XBOOT_DIR$relative_image_dir"
     local alt_image="/sblinux.alt.efi"
 
     echo "mortar: Installing maintenance kernel $version to EFI."
@@ -187,11 +188,11 @@ INSTALL_RECOVERY_HELP="Usage: mortar install recovery [<version>]
   Install the current recovery to the ESP(s). 
 "
 install_recovery() {
-    local IMAGE_DIR="/boot/xbootldr/EFI"
+    local IMAGE_DIR="$BOOT_XBOOT_DIR/EFI"
     local IMAGE="/sbrecovery.efi"
     local RECOVERY_DIR="/recovery/casper-27EC-7247"
     
-#    mkdir -p "$BOOT_EFI_DIR$IMAGE_DIR"
+#    mkdir -p "$BOOT_XBOOT_DIR$IMAGE_DIR"
     echo "mortar: Installing recovery to efi."
     build_image "$RECOVERY_DIR/vmlinuz.efi"\
                 "$RECOVERY_DIR/initrd.gz"\
@@ -210,9 +211,9 @@ REMOVE_KERNEL_HELP="Usage: mortar remove-kernel [<version>]
 """
 remove_kernel() {
     local version="${1:-$(uname -r)}"
-    local image_dir="$BOOT_EFI_DIR/$MACHINE_ID/$version"
+    local image_dir="$BOOT_XBOOT_DIR/$MACHINE_ID/$version"
     local image="$image_dir/linux.efi"
-    local conf="$BOOT_EFI_DIR/loader/entries/$MACHINE_ID_ACTUAL-$version.conf"
+    local conf="$BOOT_XBOOT_DIR/loader/entries/$MACHINE_ID_ACTUAL-$version.conf"
 
     rm "$conf" || true
     rm "$image" || true
@@ -227,8 +228,8 @@ BOOTCTL_HELP="Usage: mortar bootctl [<argument> ...]
 bootctl() {
     command bootctl --path="$BOOT_EFI_DIR" "$@"
     echo "Signing bootloader";
-    sign_image "$BOOT_EFI_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
-    sign_image "$BOOT_EFI_DIR/EFI/BOOT/BOOTX64.efi"
+    sign_image "$BOOT_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
+    sign_image "$BOOT_DIR/EFI/BOOT/BOOTX64.efi"
     clean_boot
 }
 
