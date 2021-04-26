@@ -1,19 +1,19 @@
 #!/bin/sh
-KERNEL=${$1:"$(basename "$( sudo readlink -f /boot/vmlinuz )")"}
+KERNEL=${1:="$(basename "$( sudo readlink -f /boot/vmlinuz )")"}
 MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
-    #TEST WILDCARD REQUIRES QUOTES
+    #Test wildcard requires quotes if a file has a wildcard
 [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
 [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-[ "-f /boot/efi/loader/entries/Pop_OS-*" ] && rm /boot/efi/loader/entries/Pop_OS-* > /dev/null
+[ -f /boot/efi/loader/entries/Pop_OS* ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
 [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
 [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
 
 sign_kernel() {
-    $MORTAR install-kernel "$1";
+    $MORTAR install-kernel "$KERNEL";
     clean_boot;
 }
 sign_alt() {
@@ -22,7 +22,4 @@ sign_alt() {
 }
 
 $MORTAR help > /dev/null || exit 1;
-
-#[ "$KERNEL" = "vmlinuz-$1" ] && sign_kernel $1;
-#[ "$ALT" = "vmlinuz-$1" ] && sign_alt $1;
 sign_kernel && clean_boot; exit 0
