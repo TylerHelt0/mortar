@@ -8,7 +8,7 @@ clean_boot() {
     #Test wildcard requires quotes if a file has a wildcard
     [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
     [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null
+    [ -f "/boot/efi/loader/entries/Pop_OS*" ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
     [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
     [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
@@ -23,4 +23,7 @@ sign_alt() {
 }
 
 $MORTAR help > /dev/null || exit 1;
-sign_kernel; exit 
+
+[ "$1" = "$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')" ] && sign_kernel;
+[ "$1" = "$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')" ] && sign_alt;
+exit 0;

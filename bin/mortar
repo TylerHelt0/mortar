@@ -65,7 +65,7 @@ clean_boot() {
     #Test wildcard requires quotes if a file has a wildcard
     [ -d /boot/efi/EFI/Recovery* ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
     [ -d /boot/efi/EFI/Pop_OS* ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-    [ -f /boot/efi/loader/entries/Pop_OS* ] && rm -r /boot/efi/loader/entries/Pop_OS* > /dev/null
+    [ -f "/boot/efi/loader/entries/Pop_OS*" ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
     [ -d /boot/efi/c93* ] && rm -r /boot/efi/c93* > /dev/null;
     [ -d /boot/xbootldr/c93* ] && rm -r /boot/xbootldr/c93 > /dev/null;
 }
@@ -228,8 +228,8 @@ BOOTCTL_HELP="Usage: mortar bootctl [<argument> ...]
 bootctl() {
     command bootctl --path="$BOOT_EFI_DIR" "$@"
     echo "Signing bootloader";
-    sign_image "$BOOT_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
-    sign_image "$BOOT_DIR/EFI/BOOT/BOOTX64.efi"
+    sign_image "$BOOT_EFI_DIR/EFI/systemd/systemd-boot${EFI_ARCH}.efi"
+    sign_image "$BOOT_EFI_DIR/EFI/BOOT/BOOTX64.efi"
     clean_boot
 }
 
