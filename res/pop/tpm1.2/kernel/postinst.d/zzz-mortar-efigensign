@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+ver="$1"
+kloc="$2"
+rdloc="/boot/initrd.img-$ver"
+
+if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
+if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
+if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
+
+/usr/local/sbin/mortar install-kernel "$ver";
+[ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
+[ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
+[ -f "/boot/efi/loader/entries/Pop_OS*" ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
+[ -d "/boot/efi/c93*" ] && rm -r /boot/efi/c93* > /dev/null;
+[ -d "/boot/xbootldr/c93*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
