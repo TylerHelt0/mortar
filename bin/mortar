@@ -62,12 +62,12 @@ _read_yes_no() {
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
-    #Test wildcard requires quotes if a file has a wildcard
-    [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-    [ -f "/boot/efi/loader/entries/Pop_OS*" ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
-    [ -d "/boot/efi/c93*" ] && rm -r /boot/efi/c93* > /dev/null;
-    [ -d "/boot/xbootldr/c93*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
+    local EFI="/boot/efi/EFI"
+    find $EFI -type d -name "Recovery*" -exec rm -r "{}" \;
+    find $EFI -type d -name "Pop_OS*" -exec rm -r "{}" \;
+    find $EFI -type f -name "Pop_OS*" -exec rm -r "{}" \;
+    find $EFI -type d -name "c93*" -exec rm -r "{}" \;
+    find /boot/xbootldr -type d -name "c93" -exec rm -r "{}" \;
 }
 
 BUILD_IMAGE_HELP="Usage: mortar build-image <kernel> <initramfs> <output> [<cmdline>]
@@ -171,7 +171,7 @@ install_alternates() {
     local version="${1:="$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')"}"
     local relative_image_dir="/EFI"
     local image_dir="$BOOT_XBOOT_DIR$relative_image_dir"
-    local alt_image="/sblinux.alt.efi"
+    local alt_image="/sbmaint.efi"
 
     echo "mortar: Installing maintenance kernel $version to EFI."
     build_image "$BOOT_DIR/vmlinuz-$version"\
@@ -215,9 +215,9 @@ remove_kernel() {
     local image="$image_dir/linux.efi"
     local conf="$BOOT_XBOOT_DIR/loader/entries/$MACHINE_ID_ACTUAL-$version.conf"
 
-    rm "$conf" || true
+    #rm "$conf" || true
     rm "$image" || true
-    rmdir "$image_dir" || true
+    #rmdir "$image_dir" || true
 }
 
 BOOTCTL_HELP="Usage: mortar bootctl [<argument> ...]

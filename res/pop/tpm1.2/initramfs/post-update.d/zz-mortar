@@ -5,12 +5,12 @@ MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
-    #Test wildcard requires quotes if a file has a wildcard
-    [ -d "/boot/efi/EFI/Recovery*" ] && rm -r /boot/efi/EFI/Recovery* > /dev/null;
-    [ -d "/boot/efi/EFI/Pop_OS*" ] && rm -r /boot/efi/EFI/Pop_OS-* > /dev/null;
-    [ -f "/boot/efi/loader/entries/Pop_OS*" ] && rm /boot/efi/loader/entries/Pop_OS* > /dev/null
-    [ -d "/boot/efi/c93*" ] && rm -r /boot/efi/c93* > /dev/null;
-    [ -d "/boot/xbootldr/c93*" ] && rm -r /boot/xbootldr/c93 > /dev/null;
+    local EFI="/boot/efi/EFI"
+    find $EFI -type d -name "Recovery*" -exec rm -r "{}" \;
+    find $EFI -type d -name "Pop_OS*" -exec rm -r "{}" \;
+    find $EFI -type f -name "Pop_OS*" -exec rm -r "{}" \;
+    find $EFI -type d -name "c93*" -exec rm -r "{}" \;
+    find /boot/xbootldr -type d -name "c93" -exec rm -r "{}" \;
 }
 
 sign_kernel() {
