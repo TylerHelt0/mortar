@@ -5,25 +5,28 @@ MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
-    local EFI="/boot/efi/EFI"
+    EFI="/boot/efi/EFI"
+    XBOOT="/boot/xbootldr"
     find $EFI -type d -name "Recovery*" -exec rm -r "{}" \;
     find $EFI -type d -name "Pop_OS*" -exec rm -r "{}" \;
     find $EFI -type f -name "Pop_OS*" -exec rm -r "{}" \;
     find $EFI -type d -name "c93*" -exec rm -r "{}" \;
-    find /boot/xbootldr -type d -name "c93" -exec rm -r "{}" \;
+    find $XBOOT -type d -name "c93*" -exec rm -r "{}" \;
 }
 
 sign_kernel() {
-    $MORTAR install-kernel "$KERNEL";
+    $MORTAR install-kernel "$KERNEL" || echo "Mortar: Couldn't install initramfs update.";
     clean_boot;
 }
 sign_alt() {
-    $MORTAR install-alternates "$ALT";
+    $MORTAR install-alternates "$ALT" || echo "Mortar: Couldn't install maintainence initramfs update";
     clean_boot;
 }
 
-$MORTAR help > /dev/null || exit 1;
+$MORTAR help > /dev/null || echo "Mortar: mortar not found." && exit 1;
 
-[ "$1" = "$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')" ] && sign_kernel;
-[ "$1" = "$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')" ] && sign_alt;
+[ "$1" = "$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')" ] && sign_kernel && exit 0
+[ "$1" = "$(file -bL /boot/vmlinuz.old | sed 's/.*version //;s/ .*//')" ] && sign_alt && exit 0 
+
+echo "Mortar: Not symlinked in boot.";
 exit 0;

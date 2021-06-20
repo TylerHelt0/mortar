@@ -2,25 +2,29 @@
 
 NEW_KERNEL="$1"
 OLD_KERNEL=${"$(file -bL /boot/vmlinuz | sed 's/.*version //;s/ .*//')"}
+ver="$1"
 kloc="$2"
-rdloc="/boot/initrd.img-$ver"
+rdloc="/boot/initrd.img-$1"
 
 MORTAR=/usr/local/sbin/mortar
 
 clean_boot() {
     #Remove unneccessary boot partition clutter
     local EFI="/boot/efi/EFI"
+    local XBOOT="/boot/xbootldr"
     find $EFI -type d -name "Recovery*" -exec rm -r "{}" \;
     find $EFI -type d -name "Pop_OS*" -exec rm -r "{}" \;
     find $EFI -type f -name "Pop_OS*" -exec rm -r "{}" \;
     find $EFI -type d -name "c93*" -exec rm -r "{}" \;
-    find /boot/xbootldr -type d -name "c93" -exec rm -r "{}" \;
+    find $XBOOT -type d -name "c93*" -exec rm -r "{}" \;
 }
 
-if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
+if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$1"; fi
 if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
 if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
 
-#$MORTAR install-kernel "$ver";
+/usr/bin/linux-update-symlinks upgrade $ver $kloc || echo "mortar: Couldn't update symlinks." && exit 1;
+#$MORTAR install-kernel "$ver" || echo "Mortar: Couldn't install kernel update." && exit 1;
 
-clean_boot && exit 0;
+clean_boot;
+exit 0;
