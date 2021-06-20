@@ -1,0 +1,18 @@
+#!/bin/sh -e
+BOOOTX64=
+SYSTEMD=
+
+ver="$1"
+kloc="$2"
+rdloc="/boot/initrd.img-$ver"
+
+if ! [ -e "$kloc" ]; then kloc="/boot/vmlinuz-$ver"; fi
+if ! [ -e "$kloc" ]; then echo "Can't find the new kernel."; exit 1; fi
+if ! [ -e "$rdloc" ]; then echo "Can't find the new initrd.img."; exit 2; fi
+
+/usr/local/sbin/mortar-compilesigninstall "$kloc" "$rdloc"
+echo "Kernel installed and signed for secureboot."
+
+bootctl install && sbsign --output $SYSTEMD --key $SECUREBOOT_DB_KEY --cert $SECUREBOOT_DB_CRT $SYSTEMD
+cp $SYSTEMD $BOOTX64
+echo "Systemd-boot signed for secureboot."

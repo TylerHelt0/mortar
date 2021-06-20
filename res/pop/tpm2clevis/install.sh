@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Noah Bliss
 
+if ! [ "$1" == "nosource" ]; then source /etc/mortar/mortar.env; fi
 #If using xbootldr these paths may not be the sa-me as /boot/efi.
 BOOTX64="/boot/efi/EFI/BOOT/BOOTX64.efi"
 #Path to systemd-boot bootloader efi image.
@@ -11,8 +12,8 @@ cp -r kernel /etc/
 
 # Install the initramfs script and update hook. 
 cp -r initramfs-tools /etc/
+cp -r initramfs /etc/
 INITRAMFSSCRIPTFILE='/etc/initramfs-tools/scripts/local-top/mortar'
-if ! [ "$1" == "nosource" ]; then source /etc/mortar/mortar.env; fi
 sed -i -e "/^CRYPTDEV=.*/{s##CRYPTDEV=\"$CRYPTDEV\"#;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
 sed -i -e "/^CRYPTNAME=.*/{s//CRYPTNAME=$CRYPTNAME/;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
 sed -i -e "/^SLOTUUID=.*/{s//SLOTUUID=$SLOTUUID/;:a" -e '$!N;$!b' -e '}' "$INITRAMFSSCRIPTFILE"
